@@ -136,7 +136,6 @@ EFI_STATUS OpenRootDir(EFI_HANDLE image_hundle, EFI_FILE_PROTOCOL **root)
     return EFI_SUCCESS;
 }
 
-// #@@range_begin(OpenGOP)
 EFI_STATUS OpenGOP(EFI_HANDLE image_handle,
                    EFI_GRAPHICS_OUTPUT_PROTOCOL **gop)
 {
@@ -161,9 +160,7 @@ EFI_STATUS OpenGOP(EFI_HANDLE image_handle,
 
     return EFI_SUCCESS;
 }
-// #@@range_end(OpenGOP)
 
-// #@@range_begin(GetPixelFormatUnicode)
 const CHAR16 *GetPixelFormatUnicode(EFI_GRAPHICS_PIXEL_FORMAT fmt)
 {
     switch (fmt)
@@ -182,7 +179,6 @@ const CHAR16 *GetPixelFormatUnicode(EFI_GRAPHICS_PIXEL_FORMAT fmt)
         return L"InvalidPixelFormat";
     }
 }
-// #@@range_end(GetPixelFormatUnicode)
 
 EFI_STATUS EFIAPI UefiMain(
     EFI_HANDLE image_handle,
@@ -208,7 +204,6 @@ EFI_STATUS EFIAPI UefiMain(
     SaveMemoryMap(&memmap, memmap_file);
     memmap_file->Close(memmap_file);
 
-    // #@@range_begin(gop)
     EFI_GRAPHICS_OUTPUT_PROTOCOL *gop;
     OpenGOP(image_handle, &gop);
     Print(L"Resolution: %ux%u, Pixel Format: %s, %u pixels/line\n",
@@ -221,11 +216,11 @@ EFI_STATUS EFIAPI UefiMain(
           gop->Mode->FrameBufferBase + gop->Mode->FrameBufferSize,
           gop->Mode->FrameBufferSize);
 
-    UINT8* frame_buffer = (UINT8*)gop->Mode->FrameBufferBase;
-    for (UINTN i = 0; i < gop->Mode->FrameBufferSize; ++i) {
+    UINT8 *frame_buffer = (UINT8 *)gop->Mode->FrameBufferBase;
+    for (UINTN i = 0; i < gop->Mode->FrameBufferSize; ++i)
+    {
         frame_buffer[i] = 255;
     }
-    // #@@range_end(gop)
 
     EFI_FILE_PROTOCOL *kernel_file;
     root_dir->Open(
@@ -277,9 +272,11 @@ EFI_STATUS EFIAPI UefiMain(
 
     UINT64 entry_adder = *(UINT64 *)(kernel_base_addr + 24);
 
-    typedef void EntryPointType(void);
+    // #@@range_begin(call_kernel)
+    typedef void EntryPointType(UINT64, UINT64);
     EntryPointType *entry_pont = (EntryPointType *)entry_adder;
-    entry_pont();
+    entry_pont(gop->Mode->FrameBufferBase, gop->Mode->FrameBufferSize);
+    // #@@range_end(call_kernel)
 
     Print(L"All done\n");
 
